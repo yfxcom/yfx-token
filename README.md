@@ -1,1 +1,0 @@
-YFX Token
