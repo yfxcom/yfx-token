@@ -3,18 +3,23 @@ pragma solidity >=0.6.0 <0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-import "./interfaces/IYFX.sol";
-import "./Ownable.sol";
-contract YFX is ERC20, IYFX, Ownable {
+import "./interfaces/IERC677.sol";
+import "./interfaces/IERC2612.sol";
+
+contract YFX is ERC20, IERC677, IERC2612, Ownable {
     using SafeMath for uint256;
 
-    uint256 public override constant cap = 100_000_000e18; // CAP is 200,000,000 LON
+    uint256 public constant cap = 100_000_000e18; // CAP is 200,000,000 LON
 
     bytes32 public override  DOMAIN_SEPARATOR;
 
     // keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)")
     bytes32 public constant PERMIT_TYPEHASH = 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
+
+    // keccak256("Transfer(address target,address to,uint256 value,uint256 nonce,uint256 deadline)")
+    bytes32 public constant TRANSFER_TYPEHASH = 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
 
     address public emergencyRecipient;
 
@@ -36,7 +41,7 @@ contract YFX is ERC20, IYFX, Ownable {
 
     event MinterChanged(address minter, address newMinter);
 
-    constructor(address _owner, address _emergencyRecipient) ERC20("YFX", "YFX") Ownable(_owner)  {
+    constructor(address _owner, address _emergencyRecipient) ERC20("YFX", "YFX") Ownable() public {
         minter = _owner;
         emergencyRecipient = _emergencyRecipient;
 
@@ -60,11 +65,11 @@ contract YFX is ERC20, IYFX, Ownable {
         _;
     }
 
-    function burn(uint256 amount) external override {
+    function burn(uint256 amount) external {
         _burn(msg.sender, amount);
     }
 
-    function emergencyWithdraw(IERC20 token) external override {
+    function emergencyWithdraw(IERC20 token) external {
         token.transfer(emergencyRecipient, token.balanceOf(address(this)));
     }
 
@@ -73,10 +78,8 @@ contract YFX is ERC20, IYFX, Ownable {
         minter = newMinter;
     }
 
-    function mint(address to, uint256 amount) external override onlyMinter {
-        require(to != address(0), "zero address");
+    function mint(address to, uint256 amount) external onlyMinter {
         require(totalSupply().add(amount) <= cap, "cap exceeded");
-
         _mint(to, amount);
     }
 
@@ -128,7 +131,25 @@ contract YFX is ERC20, IYFX, Ownable {
         }
     }
 
-    // implement the eip-2612
+
+    function transferWithPermit(address target, address to, uint256 value, uint256 nonce, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external returns (bool success) {
+        require(block.timestamp <= deadline, "expired transfer");
+
+        bytes32 digest = keccak256(
+            abi.encodePacked(
+                uint16(0x1901),
+                DOMAIN_SEPARATOR,
+                keccak256(abi.encode(TRANSFER_TYPEHASH, target, to, value, nonce, deadline))
+            )
+        );
+
+        require(target == ecrecover(digest, v, r, s), "invalid signature");
+
+        _transfer(target, to, value);
+        return true;
+    }
+
+    // implement the erc-2612
     function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external override {
         require(owner != address(0), "zero address");
         require(block.timestamp <= deadline || deadline == 0, "permit is expired");
@@ -143,5 +164,19 @@ contract YFX is ERC20, IYFX, Ownable {
 
         require(owner == ecrecover(digest, v, r, s), "invalid signature");
         _approve(owner, spender, value);
+    }
+
+
+    // implement the erc-677
+    function transferAndCall(address to, uint value, bytes calldata data) external override returns (bool success) {
+        _transfer(msg.sender, to, value);
+
+        return ITransferReceiver(to).onTokenTransfer(msg.sender, value, data);
+    }
+
+    function approveAndCall(address spender, uint256 value, bytes calldata data) external override returns (bool success) {
+        _approve(msg.sender, spender, value);
+
+        return IApprovalReceiver(spender).onTokenApproval(msg.sender, value, data);
     }
 }

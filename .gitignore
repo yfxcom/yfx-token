@@ -2,3 +2,4 @@ artifacts/
 build/
 interface/artifacts/
 .idea/
+node_modules/
