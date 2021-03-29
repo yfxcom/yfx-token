@@ -1,17 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.6.0 <0.8.0;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20Capped.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "./interfaces/IERC677.sol";
 import "./interfaces/IERC2612.sol";
 
-contract YFX is ERC20, IERC677, IERC2612, Ownable {
+contract YFX is ERC20Capped, IERC677, IERC2612, Ownable {
     using SafeMath for uint256;
-
-    uint256 public constant cap = 100_000_000e18; // CAP is 100,000,000 YFX
 
     bytes32 public override  DOMAIN_SEPARATOR;
 
@@ -23,27 +21,10 @@ contract YFX is ERC20, IERC677, IERC2612, Ownable {
 
     address public emergencyRecipient;
 
-    address public minter;
-
     mapping(address => uint256) public  override nonces;
 
-    struct LockAddress {
-        address recipient;
-        uint256 vestingAmount;
-        uint256 balance;
-        uint256 vestingBegin;
-        uint256 vestingCliff;
-        uint256 vestingEnd;
-        uint256 lastUpdate;
-    }
-
-    mapping(address => LockAddress) public locks;
-
-    event MinterChanged(address minter, address newMinter);
-
-    constructor(address _owner, address _emergencyRecipient, string memory _name, string memory _symbol) ERC20(_name, _symbol) Ownable() public {
-        minter = _owner;
-        emergencyRecipient = _emergencyRecipient;
+    constructor(address owner_, address emergencyRecipient_, string memory name_, string memory symbol_, uint256 cap_) ERC20Capped(cap_) ERC20(name_, symbol_) Ownable() public {
+        emergencyRecipient = emergencyRecipient_;
 
         uint256 chainId;
         assembly {
@@ -60,77 +41,17 @@ contract YFX is ERC20, IERC677, IERC2612, Ownable {
         );
     }
 
-    modifier onlyMinter {
-        require(msg.sender == minter, "not minter");
-        _;
-    }
-
     function burn(uint256 amount) external {
         _burn(msg.sender, amount);
+    }
+
+    function mint(address to, uint value) external onlyOwner {
+        _mint(to, value);
     }
 
     function emergencyWithdraw(IERC20 token) external {
         token.transfer(emergencyRecipient, token.balanceOf(address(this)));
     }
-
-    function setMinter(address newMinter) external onlyOwner {
-        emit MinterChanged(minter, newMinter);
-        minter = newMinter;
-    }
-
-    function mint(address to, uint256 amount) external onlyMinter {
-        require(totalSupply().add(amount) <= cap, "cap exceeded");
-        _mint(to, amount);
-    }
-
-    function addTokenLockAddress(address _recipient, uint256 _vestingAmount, uint256 _vestingBegin, uint256 _vestingCliff, uint256 _vestingEnd) external onlyMinter {
-        require(_vestingAmount > 0, "vesting amount is zero");
-        require(_vestingBegin >= block.timestamp, "vesting begin too early");
-        require(_vestingCliff >= _vestingBegin, "cliff is too early");
-        require(_vestingEnd > _vestingCliff, "end is too early");
-
-        require(totalSupply().add(_vestingAmount) <= cap, "cap exceeded");
-        _mint(address(this), _vestingAmount);
-
-        locks[_recipient] = LockAddress(
-            _recipient,
-            _vestingAmount,
-            _vestingAmount,
-            _vestingBegin,
-            _vestingCliff,
-            _vestingEnd,
-            _vestingBegin
-        );
-    }
-
-    function vested(address _recipient) external view returns (uint256) {
-        LockAddress storage lockAddress = locks[_recipient];
-        require(lockAddress.vestingAmount != 0, 'not exit');
-        if (block.timestamp < lockAddress.vestingCliff) {
-            return 0;
-        }
-
-        if (block.timestamp >= lockAddress.vestingEnd) {
-            return lockAddress.balance;
-        } else {
-            return lockAddress.vestingAmount.mul(block.timestamp - lockAddress.lastUpdate).div(lockAddress.vestingEnd.sub(lockAddress.vestingBegin));
-        }
-    }
-
-    function claim() external {
-        LockAddress storage lockAddress = locks[msg.sender];
-        require(lockAddress.vestingAmount != 0, 'not exit');
-        require(block.timestamp >= lockAddress.vestingCliff, "not time yet");
-        uint256 amount = this.vested(msg.sender);
-
-        if (amount > 0) {
-            require(amount <= lockAddress.balance, 'Insufficient balance');
-            lockAddress.lastUpdate = block.timestamp;
-            lockAddress.balance = lockAddress.balance.sub(amount);
-            _transfer(address(this), msg.sender, amount);
-        }
-    }
-
 
     function transferWithPermit(address owner, address to, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external {
         require(owner != address(0) && to != address(0), "zero address");
