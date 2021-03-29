@@ -11,15 +11,15 @@ import "./interfaces/IERC2612.sol";
 contract YFX is ERC20, IERC677, IERC2612, Ownable {
     using SafeMath for uint256;
 
-    uint256 public constant cap = 100_000_000e18; // CAP is 200,000,000 LON
+    uint256 public constant cap = 100_000_000e18; // CAP is 100,000,000 YFX
 
     bytes32 public override  DOMAIN_SEPARATOR;
 
     // keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)")
     bytes32 public constant PERMIT_TYPEHASH = 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
 
-    // keccak256("Transfer(address target,address to,uint256 value,uint256 nonce,uint256 deadline)")
-    bytes32 public constant TRANSFER_TYPEHASH = 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
+    // keccak256("Transfer(address owner,address to,uint256 value,uint256 nonce,uint256 deadline)")
+    bytes32 public constant TRANSFER_TYPEHASH = 0x42ce63790c28229c123925d83266e77c04d28784552ab68b350a9003226cbd59;
 
     address public emergencyRecipient;
 
@@ -41,7 +41,7 @@ contract YFX is ERC20, IERC677, IERC2612, Ownable {
 
     event MinterChanged(address minter, address newMinter);
 
-    constructor(address _owner, address _emergencyRecipient) ERC20("YFX", "YFX") Ownable() public {
+    constructor(address _owner, address _emergencyRecipient, string memory _name, string memory _symbol) ERC20(_name, _symbol) Ownable() public {
         minter = _owner;
         emergencyRecipient = _emergencyRecipient;
 
@@ -132,21 +132,20 @@ contract YFX is ERC20, IERC677, IERC2612, Ownable {
     }
 
 
-    function transferWithPermit(address target, address to, uint256 value, uint256 nonce, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external returns (bool success) {
-        require(block.timestamp <= deadline, "expired transfer");
+    function transferWithPermit(address owner, address to, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external {
+        require(owner != address(0) && to != address(0), "zero address");
+        require(block.timestamp <= deadline || deadline == 0, "expired transfer");
 
         bytes32 digest = keccak256(
             abi.encodePacked(
                 uint16(0x1901),
                 DOMAIN_SEPARATOR,
-                keccak256(abi.encode(TRANSFER_TYPEHASH, target, to, value, nonce, deadline))
+                keccak256(abi.encode(TRANSFER_TYPEHASH, owner, to, value, nonces[owner]++, deadline))
             )
         );
 
-        require(target == ecrecover(digest, v, r, s), "invalid signature");
-
-        _transfer(target, to, value);
-        return true;
+        require(owner == ecrecover(digest, v, r, s), "invalid signature");
+        _transfer(owner, to, value);
     }
 
     // implement the erc-2612
