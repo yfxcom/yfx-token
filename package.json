@@ -1,0 +1,20 @@
+{
+  "name": "yfx-token",
+  "version": "1.0.0",
+  "description": "",
+  "main": "tronbox-config.js",
+  "directories": {
+    "test": "test"
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "yfx:yfxcom/yfx-token.git"
+  },
+  "author": "",
+  "license": "ISC"
+}
