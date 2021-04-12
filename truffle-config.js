@@ -85,6 +85,16 @@ module.exports = {
             skipDryRun: true     // Skip dry run before migrations? (default: false for public nets )
         },
 
+        Rinkeby: {
+            provider: () => new HDWalletProvider(privateKey, 'https://rinkeby.infura.io/v3/14f0131b40b54ec8bd9e0a162bbdc41f'),
+            network_id: 4,       // Ropsten's id
+            gas: 10000000,        // Ropsten has a lower block limit than mainnet
+            gasPrice: 10000000000,
+            // confirmations: 2,    // # of confs to wait between deployments. (default: 0)
+            // timeoutBlocks: 500,  // # of blocks before a deployment times out  (minimum/default: 50)
+            skipDryRun: true     // Skip dry run before migrations? (default: false for public nets )
+        },
+
         heco_testnet: {
             // provider: () => new HDWalletProvider(privateKey, 'https://data-seed-prebsc-2-s3.binance.org:8545/'),
             // network_id: "97",   // This network is yours, in the cloud.
