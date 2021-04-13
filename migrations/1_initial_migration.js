@@ -1,3 +1,14 @@
+let yfxContract = artifacts.require("./YFX.sol");
+let owner = "";
+
+module.exports = async function (deployer) {
+    await deployer.deploy(yfxContract);
+    let yfx = await yfxContract.deployed();
+    await yfx.transferOwnership(owner);
+};
+
+/*
+
 let create2Contract = artifacts.require("./Create2Deployer.sol");
 let owner = "";
 
@@ -7,6 +18,7 @@ module.exports = async function (deployer) {
     await create2.deployYFX(owner);
 };
 
+*/
 
 /*
 
