@@ -2,8 +2,7 @@
   "name": "yfxtokendev",
   "version": "1.0.0",
   "dependencies": {
-    "@openzeppelin/contracts": "^3.4.0",
-    "bignumber.js": "^9.0.1"
+    "@openzeppelin/contracts": "^3.4.0"
   },
   "devDependencies": {
     "truffle": "^5.2.5",

@@ -76,36 +76,38 @@ module.exports = {
         },
 
         kovan: {
-            provider: () => new HDWalletProvider(privateKey, 'https://kovan.infura.io/v3/d00f3846a5dc4e1991ad35cda94d9f62'),
+            provider: () => new HDWalletProvider(privateKey, 'https://kovan.infura.io/v3/14f0131b40b54ec8bd9e0a162bbdc41f'),
             network_id: 42,       // Ropsten's id
             gas: 8000000,        // Ropsten has a lower block limit than mainnet
-            gasPrice: 10000000000,
+            gasPrice: 1000000000,
             // confirmations: 2,    // # of confs to wait between deployments. (default: 0)
             // timeoutBlocks: 500,  // # of blocks before a deployment times out  (minimum/default: 50)
             skipDryRun: true     // Skip dry run before migrations? (default: false for public nets )
         },
 
-        Rinkeby: {
+        rinkeby: {
             provider: () => new HDWalletProvider(privateKey, 'https://rinkeby.infura.io/v3/14f0131b40b54ec8bd9e0a162bbdc41f'),
             network_id: 4,       // Ropsten's id
             gas: 10000000,        // Ropsten has a lower block limit than mainnet
-            gasPrice: 10000000000,
+            gasPrice: 1000000000,
             // confirmations: 2,    // # of confs to wait between deployments. (default: 0)
             // timeoutBlocks: 500,  // # of blocks before a deployment times out  (minimum/default: 50)
             skipDryRun: true     // Skip dry run before migrations? (default: false for public nets )
         },
 
         heco_testnet: {
-            // provider: () => new HDWalletProvider(privateKey, 'https://data-seed-prebsc-2-s3.binance.org:8545/'),
-            // network_id: "97",   // This network is yours, in the cloud.
-            // gas: 10000000,           // Gas sent with each transaction (default: ~6700000)
-            // gasPrice: 120000000000,  // 20 gwei (in wei) (default: 100 gwei)
-            //production: true    // Treats this network as if it was a public net. (default: false)
-
             provider: () => new HDWalletProvider(privateKey, 'https://http-testnet.hecochain.com'),
             network_id: 256,
             // gas: 30000000,           // Gas sent with each transaction (default: ~6700000)
-            // gasPrice: 100000000000,  // 20 gwei (in wei) (default: 100 gwei)
+            gasPrice: 1000000000,  // 20 gwei (in wei) (default: 100 gwei)
+            // skipDryRun: true
+        },
+
+        bsc_testnet: {
+            provider: () => new HDWalletProvider(privateKey, 'https://data-seed-prebsc-1-s1.binance.org:8545'),
+            network_id: 97,
+            // gas: 30000000,           // Gas sent with each transaction (default: ~6700000)
+            gasPrice: 10000000000,  // 20 gwei (in wei) (default: 100 gwei)
             // skipDryRun: true
         }
     },

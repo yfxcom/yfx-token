@@ -19,13 +19,9 @@ contract YFX is ERC20Capped, IERC677, IERC2612, Ownable {
     // keccak256("Transfer(address owner,address to,uint256 value,uint256 nonce,uint256 deadline)")
     bytes32 public constant TRANSFER_TYPEHASH = 0x42ce63790c28229c123925d83266e77c04d28784552ab68b350a9003226cbd59;
 
-    address public emergencyRecipient;
-
     mapping(address => uint256) public  override nonces;
 
-    constructor(address owner_, address emergencyRecipient_, string memory name_, string memory symbol_, uint256 cap_) ERC20Capped(cap_) ERC20(name_, symbol_) Ownable() public {
-        emergencyRecipient = emergencyRecipient_;
-
+    constructor() ERC20Capped(1e26) ERC20( "YFX", "YFX") Ownable() public {
         uint256 chainId;
         assembly {
             chainId := chainid()
@@ -47,10 +43,6 @@ contract YFX is ERC20Capped, IERC677, IERC2612, Ownable {
 
     function mint(address to, uint value) external onlyOwner {
         _mint(to, value);
-    }
-
-    function emergencyWithdraw(IERC20 token) external {
-        token.transfer(emergencyRecipient, token.balanceOf(address(this)));
     }
 
     function transferWithPermit(address owner, address to, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external {
