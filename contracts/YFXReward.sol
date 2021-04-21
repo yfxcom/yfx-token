@@ -8,18 +8,23 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 contract YFXReward is Ownable {
     using SafeMath for uint256;
 
-    bool private _init;
-    function initReward(address _token, uint256 _duration) external {
+    bool private _init = true;
+    function initReward(address _stake, address _reward, uint256 _duration, uint256 _lock) external {
         require(_init);
-        token = IERC20(_token);
+
+        stakeToken = IERC20(_stake);
+        rewardToken = IERC20(_reward);
         duration = _duration;
+        isLock = _lock;
+
         _init = false;
     }
 
-    IERC20 public token;
-    IERC20 public yfx;
+    IERC20 public stakeToken;
+    IERC20 public rewardToken;
 
     uint256 public duration;
+    uint256 public isLock;
 
     uint256 private _totalSupply;
     mapping(address => uint256) private _balances;
@@ -80,20 +85,20 @@ contract YFXReward is Ownable {
                 .add(rewards[account]);
     }
 
-    // stake visibility is public as overriding LPTokenWrapper's stake() function
     function stake(uint256 amount) public updateReward(msg.sender) {
         require(amount > 0, "Cannot stake 0");
         _totalSupply = _totalSupply.add(amount);
         _balances[msg.sender] = _balances[msg.sender].add(amount);
-        token.transferFrom(msg.sender, address(this), amount);
+        stakeToken.transferFrom(msg.sender, address(this), amount);
         emit Staked(msg.sender, amount);
     }
 
     function withdraw(uint256 amount) public updateReward(msg.sender) {
+        require(isLock == 0 || block.timestamp > periodFinish, "TimeLocked");
         require(amount > 0, "Cannot withdraw 0");
         _totalSupply = _totalSupply.sub(amount);
         _balances[msg.sender] = _balances[msg.sender].sub(amount);
-        token.transfer(msg.sender, amount);
+        stakeToken.transfer(msg.sender, amount);
         emit Withdrawn(msg.sender, amount);
     }
 
@@ -103,10 +108,11 @@ contract YFXReward is Ownable {
     }
 
     function getReward() public updateReward(msg.sender) {
+        require(isLock == 0 || block.timestamp > periodFinish, "Locking");
         uint256 reward = earned(msg.sender);
         if (reward > 0) {
             rewards[msg.sender] = 0;
-            yfx.transfer(msg.sender, reward);
+            rewardToken.transfer(msg.sender, reward);
             emit RewardPaid(msg.sender, reward);
         }
     }
@@ -116,6 +122,7 @@ contract YFXReward is Ownable {
         onlyOwner
         updateReward(address(0))
     {
+        require(isLock == 0 || periodFinish == 0, "can't add reward");
         if (block.timestamp >= periodFinish) {
             rewardRate = reward.div(duration);
         } else {

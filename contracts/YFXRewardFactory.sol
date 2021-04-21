@@ -7,13 +7,13 @@ import "./YFXReward.sol";
 contract YFXRewardFactory is Ownable {
     event RewardCreated(address addr);
 
-    function createReward(address owner, address token, uint256 duration) public onlyOwner {
+    function createReward(address owner, address stake, address reward, uint256 duration, uint256 lock) public onlyOwner {
 
-        YFXReward reward = new YFXReward();
+        YFXReward _reward = new YFXReward();
 
-        reward.initReward(token, duration);
-        reward.transferOwnership(owner);
+        _reward.initReward(stake, reward, duration, lock);
+        _reward.transferOwnership(owner);
 
-        emit RewardCreated(address(reward));
+        emit RewardCreated(address(_reward));
     }
 }
