@@ -5,6 +5,32 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
+
+library TransferHelper {
+    function safeApprove(address token, address to, uint value) internal {
+        // bytes4(keccak256(bytes('approve(address,uint256)')));
+        (bool success, bytes memory data) = token.call(abi.encodeWithSelector(0x095ea7b3, to, value));
+        require(success && (data.length == 0 || abi.decode(data, (bool))), 'TransferHelper: APPROVE_FAILED');
+    }
+
+    function safeTransfer(address token, address to, uint value) internal {
+        // bytes4(keccak256(bytes('transfer(address,uint256)')));
+        (bool success, bytes memory data) = token.call(abi.encodeWithSelector(0xa9059cbb, to, value));
+        require(success && (data.length == 0 || abi.decode(data, (bool))), 'TransferHelper: TRANSFER_FAILED');
+    }
+
+    function safeTransferFrom(address token, address from, address to, uint value) internal {
+        // bytes4(keccak256(bytes('transferFrom(address,address,uint256)')));
+        (bool success, bytes memory data) = token.call(abi.encodeWithSelector(0x23b872dd, from, to, value));
+        require(success && (data.length == 0 || abi.decode(data, (bool))), 'TransferHelper: TRANSFER_FROM_FAILED');
+    }
+
+    function safeTransferETH(address to, uint value) internal {
+        (bool success,) = to.call{value:value}(new bytes(0));
+        require(success, 'TransferHelper: ETH_TRANSFER_FAILED');
+    }
+}
+
 contract YFXReward is Ownable {
     using SafeMath for uint256;
 
@@ -89,7 +115,7 @@ contract YFXReward is Ownable {
         require(amount > 0, "Cannot stake 0");
         _totalSupply = _totalSupply.add(amount);
         _balances[msg.sender] = _balances[msg.sender].add(amount);
-        stakeToken.transferFrom(msg.sender, address(this), amount);
+        TransferHelper.safeTransferFrom(address(stakeToken), msg.sender, address(this), amount);
         emit Staked(msg.sender, amount);
     }
 
@@ -98,7 +124,7 @@ contract YFXReward is Ownable {
         require(amount > 0, "Cannot withdraw 0");
         _totalSupply = _totalSupply.sub(amount);
         _balances[msg.sender] = _balances[msg.sender].sub(amount);
-        stakeToken.transfer(msg.sender, amount);
+        TransferHelper.safeTransfer(address(stakeToken), msg.sender, amount);
         emit Withdrawn(msg.sender, amount);
     }
 
@@ -108,11 +134,10 @@ contract YFXReward is Ownable {
     }
 
     function getReward() public updateReward(msg.sender) {
-        require(isLock == 0 || block.timestamp > periodFinish, "Locking");
         uint256 reward = earned(msg.sender);
         if (reward > 0) {
             rewards[msg.sender] = 0;
-            rewardToken.transfer(msg.sender, reward);
+            TransferHelper.safeTransfer(address(rewardToken), msg.sender, reward);
             emit RewardPaid(msg.sender, reward);
         }
     }
