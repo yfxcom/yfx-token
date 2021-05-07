@@ -73,15 +73,14 @@ contract MultiSender {
 
 		require(_to.length <= 255, "too many");
 		
-		address from = msg.sender;
 		uint256 sendAmount = _to.length.sub(1).mul(_value);
 
         IERC20 token = IERC20(_tokenAddress);
 
-        require(token.balanceOf(from) >= sendAmount, "balance not enough");
+        require(token.balanceOf(msg.sender) >= sendAmount, "balance not enough");
 
 		for (uint8 i = 1; i < _to.length; i++) {
-            TransferHelper.safeTransferFrom(from, _to[i], _value);
+            TransferHelper.safeTransferFrom(_tokenAddress, msg.sender, _to[i], _value);
 		}
 
         emit TokenMultiSent(_tokenAddress, sendAmount);
@@ -92,13 +91,13 @@ contract MultiSender {
 		require(_to.length <= 255, "too many");
 
         uint256 sendAmount = _value[0];
-        
+
         IERC20 token = IERC20(_tokenAddress);
 
-        require(token.balanceOf(from) >= sendAmount, "balance not enough");
+        require(token.balanceOf(msg.sender) >= sendAmount, "balance not enough");
         
 		for (uint8 i = 1; i < _to.length; i++) {
-            TransferHelper.safeTransferFrom(msg.sender, _to[i], _value[i]);
+            TransferHelper.safeTransferFrom(_tokenAddress, msg.sender, _to[i], _value[i]);
 		}
 
         emit TokenMultiSent(_tokenAddress, sendAmount);
