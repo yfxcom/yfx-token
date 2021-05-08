@@ -46,13 +46,13 @@ contract VesterClaim {
     }
 
     function claim(address vester) external {
-        exec(msg.sender);
+        exec(vester);
     }
 
     function exec(address vester) internal {
         uint256 amount = balances[vester];
         require(amount > 0, "balance zero");
-        require(IERC20(yfx).balanceOf(address(this)) > amount, "yfx not enough");
+        require(IERC20(yfx).balanceOf(address(this)) >= amount, "yfx not enough");
         TransferHelper.safeTransfer(yfx, vester, amount);
         balances[vester] = 0;
         emit Claimed(amount);
