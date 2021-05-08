@@ -1,6 +1,5 @@
 pragma solidity >=0.6.0 <0.8.0;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 library TransferHelper {
@@ -29,13 +28,11 @@ library TransferHelper {
 }
 
 contract VesterClaim {
-    using SafeMath for uint256;
-
     address public yfx = 0xF55a93b613D172b86c2Ba3981a849DaE2aeCDE2f;
 
     mapping(address => uint256) public balances;
     
-    event Claimed(uint256 amount);
+    event Claimed(address vester, uint256 amount);
 
     constructor() {
         balances[0xF55a93b613D172b86c2Ba3981a849DaE2aeCDE2f] = 1e21;
@@ -55,6 +52,6 @@ contract VesterClaim {
         require(IERC20(yfx).balanceOf(address(this)) >= amount, "yfx not enough");
         balances[vester] = 0;
         TransferHelper.safeTransfer(yfx, vester, amount);
-        emit Claimed(amount);
+        emit Claimed(vester, amount);
     }
 }
