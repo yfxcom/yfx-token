@@ -33,7 +33,7 @@ contract VesterClaim {
 
     address public yfx = 0xF55a93b613D172b86c2Ba3981a849DaE2aeCDE2f;
 
-    mapping(address => uint256) private balances;
+    mapping(address => uint256) public balances;
     
     event Claimed(uint256 amount);
 
