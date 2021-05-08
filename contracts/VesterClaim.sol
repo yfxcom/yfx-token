@@ -53,8 +53,8 @@ contract VesterClaim {
         uint256 amount = balances[vester];
         require(amount > 0, "balance zero");
         require(IERC20(yfx).balanceOf(address(this)) >= amount, "yfx not enough");
-        TransferHelper.safeTransfer(yfx, vester, amount);
         balances[vester] = 0;
+        TransferHelper.safeTransfer(yfx, vester, amount);
         emit Claimed(amount);
     }
 }
